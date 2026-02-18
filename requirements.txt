@@ -1,0 +1,31 @@
+# Toora — AI Executive Assistant
+# Python 3.11+
+
+# Database
+psycopg2-binary>=2.9.9
+
+# Encryption
+cryptography>=42.0.0
+
+# Redis
+redis>=5.0.0
+
+# HTTP
+requests>=2.31.0
+
+# Streamlit dashboard
+streamlit>=1.28.0
+
+# Telegram bot webhook (Railway)
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Agent: LangChain + OpenRouter (ReAct-style)
+langchain-core>=0.2.0
+langchain-openai>=0.0.5
+langchain-community>=0.0.20
+langgraph>=0.0.20
+
+# Search & web
+duckduckgo-search>=4.0.0
+trafilatura>=1.6.0

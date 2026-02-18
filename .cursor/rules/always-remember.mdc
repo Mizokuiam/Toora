@@ -1,0 +1,55 @@
+---
+alwaysApply: true
+---
+
+# Smoort Project Configuration
+
+## Workspace
+- **Path:** `C:\Users\mrmiz\Desktop\portfolio\toora`
+- **GitHub:** https://github.com/Mizokuiam/Toora.git
+
+## Deployment (Railway/Streamlit)
+alway run build before you push changes to github if you made essential changes in the project
+Auto-deploys on push to `main` branch.
+
+
+**URLs:**
+- Frontend: https://smoort.com
+- Backend API: https://smoort-production.up.railway.app
+
+## PowerShell Syntax Rules
+
+**ALWAYS follow these rules when running shell commands:**
+
+1. **Never use `&&`** - PowerShell doesn't support bash-style chaining
+   ```powershell
+   # BAD:  command1 && command2
+   # GOOD: command1; command2
+   # GOOD: if ($?) { command2 }
+   ```
+
+2. **Quote paths with special characters** (spaces, parentheses, brackets)
+   ```powershell
+   # BAD:  git add frontend/app/(dashboard)/layout.tsx
+   # GOOD: git add "frontend/app/(dashboard)/layout.tsx"
+   ```
+
+3. **No heredocs** - PowerShell doesn't support `<<'EOF'`
+   ```powershell
+   # BAD:  git commit -m "$(cat <<'EOF' ... EOF)"
+   # GOOD: git commit -m "Single line message"
+   ```
+
+4. **Escape backticks, not backslashes** for special chars in strings
+   ```powershell
+   # Use backtick ` as escape character, not \
+   ```
+
+5. **Use semicolons `;`** to chain commands, not `&&` or `||`
+
+## MCP Servers Available
+
+- github
+- railway
+
+## Reference Resources

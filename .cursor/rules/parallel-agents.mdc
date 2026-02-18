@@ -1,0 +1,34 @@
+---
+alwaysApply: true
+---
+# Parallel Subagent Execution
+
+When given broad or multi-part tasks, **always run subagents in parallel** when the subtasks are independent:
+
+## Rules:
+
+1. **Identify independent subtasks** - Tasks that don't depend on each other's output
+2. **Launch multiple Task tool calls in a single message** - This runs them concurrently
+3. **Maximum 4 parallel agents** - Don't exceed this limit at once
+4. **Use appropriate subagent types:**
+   - `explore` - For codebase exploration, finding files, understanding code
+   - `generalPurpose` - For complex multi-step tasks
+   - `shell` - For terminal/git operations
+   - `browser-use` - For web testing
+
+## Examples:
+
+**User:** "Set up authentication, add payment integration, and create an admin dashboard"
+
+**Agent should:** Launch 3 parallel explore agents to research each area simultaneously, then implement.
+
+**User:** "Check the frontend for bugs and also review the backend API"
+
+**Agent should:** Launch 2 parallel agents - one for frontend, one for backend.
+
+## Trigger Phrases:
+- "do X and Y and Z"
+- "check multiple things"
+- "broad task" / "multiple features"
+- "explore the codebase"
+- "find all issues"

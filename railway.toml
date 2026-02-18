@@ -1,0 +1,12 @@
+# Railway deployment for Toora
+# Two services: bot (webhook), worker (agent). Share Postgres + Redis from project.
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "uvicorn bot.webhook:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
