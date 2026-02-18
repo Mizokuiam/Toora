@@ -1,0 +1,8 @@
+# Force Nixpacks to use Python provider (fixes "unable to generate a build plan")
+# https://nixpacks.com/docs/providers/python
+providers = ["python"]
+
+# Start command is overridden per-service in Railway (web vs worker)
+# Default here for web; worker uses Custom Start Command in dashboard
+[start]
+cmd = "uvicorn bot.webhook:app --host 0.0.0.0 --port ${PORT:-8080}"
