@@ -1,0 +1,27 @@
+# Dependencies and env
+.venv
+venv
+.env
+.env.*
+!.env.example
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+
+# Docs (optional, keep if you want in image)
+# README.md
+# SETUP.md
+# DEPLOY.md
+
+# Python
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.mypy_cache
+
+# OS
+.DS_Store
+Thumbs.db
