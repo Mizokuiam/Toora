@@ -55,8 +55,7 @@ name = "frontend"
 
 [services.build]
 builder = "dockerfile"
-rootDirectory = "frontend"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "frontend.Dockerfile"
 
 [services.deploy]
 startCommand = "node server.js"
