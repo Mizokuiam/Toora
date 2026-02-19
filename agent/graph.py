@@ -6,6 +6,7 @@ Publishes status updates to Redis pub/sub for real-time WebSocket forwarding.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any, Dict, Optional
@@ -13,7 +14,7 @@ from typing import Any, Dict, Optional
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from agent.tools import ALL_TOOLS, set_run_id
+from agent.tools import ALL_TOOLS, set_run_id, set_main_loop
 from core.config import get_settings
 from db.base import session_context
 from db.models import AgentConfig, AgentRun
@@ -57,6 +58,7 @@ async def run_agent(run_id: int, user_input: str = "Process my inbox and provide
     """Run the LangGraph ReAct agent for the given run_id."""
     settings = get_settings(required=["OPENROUTER_API_KEY", "DATABASE_URL", "REDIS_URL"])
     set_run_id(run_id)
+    set_main_loop(asyncio.get_running_loop())
 
     await _publish_status(settings.redis_url, run_id, "running")
 

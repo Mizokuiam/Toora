@@ -24,11 +24,19 @@ DEFAULT_USER_ID = 1
 
 # Shared run_id set by the worker before running the agent
 _current_run_id: int = 0
+# Main event loop — set by run_agent so _run can schedule coros on it (avoids
+# "Future attached to a different loop" when LangGraph runs sync tools in executor)
+_main_loop: asyncio.AbstractEventLoop | None = None
 
 
 def set_run_id(run_id: int) -> None:
     global _current_run_id
     _current_run_id = run_id
+
+
+def set_main_loop(loop: asyncio.AbstractEventLoop | None) -> None:
+    global _main_loop
+    _main_loop = loop
 
 
 async def _get_creds(platform: str) -> Optional[Dict[str, str]]:
@@ -78,15 +86,14 @@ async def _log_action(
 
 
 def _run(coro):
-    """Run coroutine from a sync context (LangChain tool interface)."""
+    """Run coroutine from a sync context (LangChain tool interface).
+    Tools are invoked by LangGraph in a thread pool. We must run our coro on
+    the main event loop (where DB engine lives), not create a new loop."""
+    loop = _main_loop
+    if loop is not None:
+        return asyncio.run_coroutine_threadsafe(coro, loop).result()
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(asyncio.run, coro)
-                return future.result()
-        return loop.run_until_complete(coro)
+        return asyncio.run(coro)
     except RuntimeError:
         return asyncio.run(coro)
 
