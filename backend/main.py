@@ -43,7 +43,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Toora API", version="2.0.0", lifespan=lifespan)
 
 # CORS — allow the frontend Railway domain (and localhost for dev)
-_settings = get_settings.__wrapped__ if hasattr(get_settings, "__wrapped__") else None
 _frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,

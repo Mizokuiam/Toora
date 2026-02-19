@@ -1,6 +1,11 @@
+# bot/Dockerfile — built with rootDirectory=bot in Railway.
 FROM python:3.12-slim
 
 WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY bot/requirements.txt ./bot/requirements.txt
 RUN pip install --no-cache-dir -r bot/requirements.txt

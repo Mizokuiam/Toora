@@ -5,13 +5,10 @@ and publishes the decision to Redis so the agent worker can proceed.
 
 from __future__ import annotations
 
-import asyncio
-import json
 import logging
 from typing import Any, Dict
 
 import httpx
-import redis.asyncio as aioredis
 
 from core.config import get_settings
 from db.base import session_context
@@ -64,15 +61,34 @@ async def handle_callback_query(callback_query: Dict[str, Any]) -> None:
     # Answer the Telegram callback to remove the loading spinner on the button
     callback_id = callback_query.get("id")
     text = "✅ Approved!" if approved else "❌ Rejected."
-    await _answer_callback(callback_id, text, settings.openrouter_api_key)
+    await _answer_callback(callback_id, text)
 
 
-async def _answer_callback(callback_query_id: str, text: str, bot_token: str) -> None:
+async def _get_telegram_bot_token() -> str:
+    """Read the Telegram bot token from the encrypted integrations DB row."""
+    try:
+        from sqlalchemy import select
+        from db.models import Integration
+        from core.encryption import decrypt_dict
+        async with session_context() as db:
+            result = await db.execute(
+                select(Integration).where(
+                    Integration.platform == "telegram",
+                    Integration.status == "connected",
+                )
+            )
+            row = result.scalar_one_or_none()
+            if row:
+                creds = decrypt_dict(row.encrypted_credentials)
+                return creds.get("bot_token", "")
+    except Exception as exc:
+        log.error("Failed to load Telegram token from DB: %s", exc)
+    return ""
+
+
+async def _answer_callback(callback_query_id: str, text: str) -> None:
     """Answer the Telegram callback query to dismiss the loading state."""
-    # bot_token here is actually the Telegram bot token — loaded from a dedicated env var
-    telegram_token = get_settings.__wrapped__ if False else None  # sentinel
-    import os
-    tg_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    tg_token = await _get_telegram_bot_token()
     if not tg_token:
         return
     url = f"https://api.telegram.org/bot{tg_token}/answerCallbackQuery"
