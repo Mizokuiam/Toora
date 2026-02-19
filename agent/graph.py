@@ -42,6 +42,20 @@ async def _get_user_config() -> Dict[str, Any]:
         }
 
 
+async def _send_summary_to_telegram(summary: str) -> None:
+    """Send agent run summary to Telegram if connected."""
+    try:
+        from agent.approval import _get_telegram_creds
+        from agent.integrations.telegram import send_message
+        creds = await _get_telegram_creds()
+        if creds:
+            text = f"*🤖 Toora briefing*\n\n{summary[:4000]}"
+            await send_message(creds, text)
+            log.info("Summary sent to Telegram.")
+    except Exception as exc:
+        log.warning("Failed to send summary to Telegram: %s", exc)
+
+
 async def _publish_status(redis_url: str, run_id: int, status: str, payload: Optional[Dict] = None) -> None:
     import redis.asyncio as aioredis
     try:
@@ -88,6 +102,9 @@ async def run_agent(run_id: int, user_input: str = "Process my inbox and provide
         result = await agent.ainvoke({"messages": [("user", user_input)]})
         summary = result["messages"][-1].content if result.get("messages") else "Agent run completed."
         await _publish_status(settings.redis_url, run_id, "idle", {"summary": summary[:500]})
+
+        # Send summary to Telegram if connected
+        await _send_summary_to_telegram(summary)
 
         # Update run record
         async with session_context() as db:
