@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir \
 COPY . .
 
 ENV PYTHONPATH=/app
-EXPOSE 8000
+EXPOSE 8080
 
-# Default: backend (FastAPI). Worker service overrides this to: python worker/main.py
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Default: backend (FastAPI). Worker service overrides this via Railway start command.
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8080}"]

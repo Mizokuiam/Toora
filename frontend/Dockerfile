@@ -1,3 +1,5 @@
+# frontend/Dockerfile — built with rootDirectory=frontend in Railway.
+# Build context is the frontend/ directory, so paths are relative to frontend/.
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
@@ -17,4 +19,5 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 EXPOSE 3000
+ENV PORT=3000
 CMD ["node", "server.js"]

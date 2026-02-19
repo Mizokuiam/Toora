@@ -13,6 +13,6 @@ RUN pip install --no-cache-dir -r bot/requirements.txt
 COPY . .
 
 ENV PYTHONPATH=/app
-EXPOSE 8001
+EXPOSE 8080
 
-CMD ["uvicorn", "bot.main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["sh", "-c", "uvicorn bot.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
