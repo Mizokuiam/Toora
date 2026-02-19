@@ -5,6 +5,7 @@ import {
   saveCredentials,
   testConnection,
   disconnectIntegration,
+  registerTelegramWebhook,
   type Integration,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,9 @@ export function IntegrationCard({
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [registering, setRegistering] = useState(false);
+  const [registerResult, setRegisterResult] = useState<string | null>(null);
+  const [registerSuccess, setRegisterSuccess] = useState(false);
 
   const connected = integration?.status === "connected";
 
@@ -60,6 +64,7 @@ export function IntegrationCard({
   const handleTest = async () => {
     setTesting(true);
     setTestResult(null);
+    setRegisterResult(null);
     try {
       const r = await testConnection(platform);
       setTestResult(r);
@@ -73,6 +78,29 @@ export function IntegrationCard({
   const handleDisconnect = async () => {
     await disconnectIntegration(platform);
     onSaved();
+  };
+
+  const handleRegisterWebhook = async () => {
+    if (platform !== "telegram" || !connected) return;
+    setRegistering(true);
+    setRegisterResult(null);
+    setRegisterSuccess(false);
+    setTestResult(null);
+    try {
+      const r = await registerTelegramWebhook();
+      if ("message" in r) {
+        setRegisterResult(r.message);
+        setRegisterSuccess(true);
+      } else {
+        setRegisterResult(r.error ?? "Unknown error");
+        setRegisterSuccess(false);
+      }
+    } catch (e) {
+      setRegisterResult((e as Error).message);
+      setRegisterSuccess(false);
+    } finally {
+      setRegistering(false);
+    }
   };
 
   return (
@@ -136,16 +164,20 @@ export function IntegrationCard({
             </div>
           ))}
 
-          {testResult && (
+          {(testResult || registerResult) && (
             <p
               className={cn(
                 "rounded-lg px-3 py-2 text-sm",
-                testResult.success
-                  ? "bg-emerald-500/10 text-emerald-400"
-                  : "bg-red-500/10 text-red-400"
+                testResult
+                  ? testResult.success
+                    ? "bg-emerald-500/10 text-emerald-400"
+                    : "bg-red-500/10 text-red-400"
+                  : registerSuccess
+                    ? "bg-emerald-500/10 text-emerald-400"
+                    : "bg-red-500/10 text-red-400"
               )}
             >
-              {testResult.message}
+              {testResult?.message ?? registerResult}
             </p>
           )}
 
@@ -167,6 +199,17 @@ export function IntegrationCard({
               {testing && <Loader2 className="h-3 w-3 animate-spin" />}
               Test
             </button>
+            {platform === "telegram" && connected && (
+              <button
+                type="button"
+                onClick={handleRegisterWebhook}
+                disabled={registering}
+                className="flex items-center gap-2 rounded-lg border border-violet-700 px-4 py-2 text-sm text-violet-400 hover:bg-violet-500/10 disabled:opacity-50 transition-colors"
+              >
+                {registering && <Loader2 className="h-3 w-3 animate-spin" />}
+                Register Webhook
+              </button>
+            )}
             {connected && (
               <button
                 type="button"

@@ -1,12 +1,14 @@
 """
 backend/services/integration_svc.py — Business logic for integration management.
 Encrypts credentials before writing to DB; decrypts for connection tests.
+Auto-registers Telegram webhook when TELEGRAM_BOT_WEBHOOK_URL is set.
 """
 
 from __future__ import annotations
 
 import importlib
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Dict, List
 
@@ -58,6 +60,21 @@ async def save_credentials(
 
     await db.flush()
     await db.refresh(integration)
+
+    # Auto-register Telegram webhook when connecting
+    if platform == "telegram":
+        webhook_url = os.environ.get("TELEGRAM_BOT_WEBHOOK_URL", "").strip()
+        if webhook_url:
+            try:
+                bot_token = credentials.get("bot_token")
+                if bot_token:
+                    from agent.integrations.telegram import register_webhook
+                    secret = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "").strip()
+                    msg = await register_webhook(bot_token, webhook_url, secret or None)
+                    log.info("Telegram webhook registered: %s", msg)
+            except Exception as exc:
+                log.warning("Failed to register Telegram webhook: %s", exc)
+
     return integration
 
 
@@ -73,6 +90,35 @@ async def disconnect_platform(db: AsyncSession, platform: str) -> bool:
         return False
     integration.status = "disconnected"
     return True
+
+
+async def register_telegram_webhook(db: AsyncSession) -> Dict[str, object]:
+    """Register Telegram webhook using stored credentials."""
+    webhook_url = os.environ.get("TELEGRAM_BOT_WEBHOOK_URL", "").strip()
+    if not webhook_url:
+        return {"error": "TELEGRAM_BOT_WEBHOOK_URL not configured on server."}
+    result = await db.execute(
+        select(Integration).where(
+            Integration.user_id == DEFAULT_USER_ID,
+            Integration.platform == "telegram",
+            Integration.status == "connected",
+        )
+    )
+    integration = result.scalar_one_or_none()
+    if not integration:
+        return {"error": "Telegram not connected. Connect Telegram first."}
+    try:
+        creds = decrypt_dict(integration.encrypted_credentials)
+        bot_token = creds.get("bot_token")
+        if not bot_token:
+            return {"error": "No bot token in stored credentials."}
+        from agent.integrations.telegram import register_webhook
+        secret = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "").strip()
+        msg = await register_webhook(bot_token, webhook_url, secret or None)
+        return {"message": msg}
+    except Exception as exc:
+        log.error("Webhook registration failed: %s", exc)
+        return {"error": str(exc)}
 
 
 async def test_connection(db: AsyncSession, platform: str) -> Dict[str, object]:

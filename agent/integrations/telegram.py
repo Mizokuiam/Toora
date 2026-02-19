@@ -44,6 +44,20 @@ async def send_message(
         return r.json()
 
 
+async def register_webhook(bot_token: str, webhook_url: str, secret_token: Optional[str] = None) -> str:
+    """Register Telegram webhook. Returns result message."""
+    params: Dict[str, str] = {"url": webhook_url}
+    if secret_token:
+        params["secret_token"] = secret_token
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.post(_url(bot_token, "setWebhook"), params=params)
+        r.raise_for_status()
+        data = r.json()
+        if data.get("ok"):
+            return "Webhook registered successfully."
+        return data.get("description", "Unknown error")
+
+
 def build_approval_keyboard(approval_id: int) -> List[List[Dict[str, str]]]:
     return [
         [

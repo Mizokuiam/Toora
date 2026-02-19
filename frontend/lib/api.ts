@@ -103,6 +103,12 @@ export const testConnection = (platform: string) =>
     method: "POST",
   });
 
+export const registerTelegramWebhook = () =>
+  apiFetch<{ message: string } | { error: string }>(
+    "/api/integrations/telegram/register-webhook",
+    { method: "POST" }
+  );
+
 // ── Agent ─────────────────────────────────────────────────────────────────────
 
 export const runAgent = () =>

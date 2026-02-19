@@ -1,6 +1,8 @@
 """
 worker/main.py — Redis queue consumer and LangGraph agent dispatcher.
-Infinite loop: BLPOP toora:agent_jobs → create AgentRun → run agent.
+Single async loop: BLPOP toora:agent_jobs → create AgentRun → run agent.
+Uses redis.asyncio to avoid asyncio.run() per job (which caused SQLAlchemy
+"another operation is in progress" with shared async engine).
 """
 
 from __future__ import annotations
@@ -12,10 +14,10 @@ import os
 import sys
 from datetime import datetime, timezone
 
-import redis
-
 # Ensure repo root is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+import redis.asyncio as aioredis
 
 from core.config import get_settings
 from db.base import session_context
@@ -50,7 +52,7 @@ async def process_job(job: dict, redis_url: str) -> None:
 
     log.info("Processing job: user_id=%s, triggered_by=%s", user_id, triggered_by)
     run_id = await _create_run(user_id, triggered_by)
-    publish_status(redis_url, run_id, "running")
+    await publish_status(redis_url, run_id, "running")
 
     try:
         from agent.graph import run_agent
@@ -58,31 +60,34 @@ async def process_job(job: dict, redis_url: str) -> None:
         log.info("Run %d completed: %s", run_id, summary[:100])
     except Exception as exc:
         log.error("Run %d failed: %s", run_id, exc)
-        publish_status(redis_url, run_id, "idle", {"error": str(exc)})
+        await publish_status(redis_url, run_id, "idle", {"error": str(exc)})
 
 
-def main() -> None:
+async def run_loop() -> None:
     settings = get_settings(
         required=["DATABASE_URL", "REDIS_URL", "ENCRYPTION_KEY", "OPENROUTER_API_KEY"]
     )
     log.info("Toora worker started. Listening on queue: %s", REDIS_JOB_QUEUE)
 
-    r = redis.from_url(settings.redis_url, decode_responses=True)
+    r = aioredis.from_url(settings.redis_url, decode_responses=True)
 
     while True:
         try:
-            result = r.blpop(REDIS_JOB_QUEUE, timeout=30)
+            result = await r.brpop(REDIS_JOB_QUEUE, timeout=30)
             if result is None:
                 continue
             _, raw = result
             job = json.loads(raw)
-            asyncio.run(process_job(job, settings.redis_url))
-        except redis.exceptions.ConnectionError as exc:
+            await process_job(job, settings.redis_url)
+        except aioredis.ConnectionError as exc:
             log.error("Redis connection error: %s — retrying in 5s", exc)
-            import time
-            time.sleep(5)
+            await asyncio.sleep(5)
         except Exception as exc:
             log.error("Unexpected error in worker loop: %s", exc, exc_info=True)
+
+
+def main() -> None:
+    asyncio.run(run_loop())
 
 
 if __name__ == "__main__":

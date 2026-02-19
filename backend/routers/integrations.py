@@ -42,3 +42,12 @@ async def disconnect(platform: str, db: AsyncSession = Depends(get_session)):
 async def test_connection(platform: str, db: AsyncSession = Depends(get_session)):
     result = await integration_svc.test_connection(db, platform)
     return TestConnectionResult(**result)
+
+
+@router.post("/telegram/register-webhook")
+async def register_telegram_webhook(db: AsyncSession = Depends(get_session)):
+    """Register the Telegram webhook using stored credentials. Call after connecting Telegram."""
+    result = await integration_svc.register_telegram_webhook(db)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
