@@ -22,10 +22,14 @@ REDIS_JOB_QUEUE = "toora:agent_jobs"
 REDIS_STATUS_KEY = "toora:agent_status"
 
 
-async def push_run_job(redis_url: str) -> None:
+async def push_run_job(redis_url: str, user_input: str | None = None) -> None:
     """Push a manual agent run job onto the Redis queue."""
     r = aioredis.from_url(redis_url, decode_responses=True)
-    payload = json.dumps({"user_id": DEFAULT_USER_ID, "triggered_by": "manual"})
+    payload = json.dumps({
+        "user_id": DEFAULT_USER_ID,
+        "triggered_by": "manual",
+        "input": user_input or "Process my inbox and provide a daily briefing.",
+    })
     await r.rpush(REDIS_JOB_QUEUE, payload)
     await r.aclose()
     log.info("Agent job pushed to Redis queue.")
@@ -67,6 +71,7 @@ async def get_config(db: AsyncSession) -> AgentConfigOut:
             enabled_tools={},
             schedule="manual",
             system_prompt=None,
+            memory=None,
             approval_rules={},
         )
     return AgentConfigOut.model_validate(cfg)
@@ -89,6 +94,8 @@ async def update_config(db: AsyncSession, data: AgentConfigUpdate) -> AgentConfi
         cfg.system_prompt = data.system_prompt
     if data.approval_rules is not None:
         cfg.approval_rules = data.approval_rules
+    if data.memory is not None:
+        cfg.memory = data.memory
 
     await db.flush()
     await db.refresh(cfg)

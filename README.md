@@ -1,128 +1,120 @@
-# Toora v2 — AI Executive Assistant
+# Toora — Your AI Executive Assistant
 
-> Production-ready autonomous AI agent for small business owners.  
-> Next.js 14 + FastAPI monorepo, deployed on Railway.
+Hey there! 👋 Toora is a friendly AI assistant that helps small business owners stay on top of their inbox, meetings, and tasks. Think of it as a smart helper that reads your emails, gives you daily briefings, and even takes action on your behalf (with your approval, of course).
 
-**Live:** https://smoort.com &nbsp;|&nbsp; **API:** https://smoort-production.up.railway.app
+**Try it live:** [https://frontend-production-8833b.up.railway.app](https://frontend-production-8833b.up.railway.app)
+
+Connect your Gmail and Telegram, and you're good to go. No credit card, no fuss.
 
 ---
 
-## Architecture
+## What can Toora do?
+
+- **Read & summarize your inbox** — Get daily briefings without opening every email
+- **Send emails** — Draft replies and send them (you approve first)
+- **Search the web** — Research topics, find articles, pull key insights
+- **Create Notion tasks** — Turn action items into tasks automatically
+- **Log to HubSpot** — Keep your CRM updated with new contacts and notes
+- **Check your calendar** — See what's coming up and avoid double-booking
+- **Chat in Telegram** — Get briefings and approve actions right from your phone
+
+Everything runs through a single dashboard. You stay in control; Toora handles the busywork.
+
+---
+
+## How it works
 
 ```
-Browser → Next.js (frontend) → FastAPI (backend) → PostgreSQL + Redis
-                                                 ↕ WebSocket (real-time)
-                        Worker (LangGraph agent) ──→ Tools (Gmail, Search, Notion, HubSpot)
-                        Bot (Telegram webhook)   ──→ Approval resolution
+You (Dashboard or Telegram) → Agent runs → Uses tools (Gmail, Calendar, etc.)
+                                         ↓
+                    Briefing + optional approvals → Back to you
 ```
 
-Four Railway services share one PostgreSQL and one Redis instance.
+The agent is powered by LangGraph and OpenRouter. It decides which tools to use based on your request, then reports back. Sensitive actions (like sending emails) require your approval via the dashboard or Telegram buttons.
 
 ---
 
-## Services
+## Tech stack
 
-| Service | Directory | Start command |
-|---------|-----------|---------------|
-| frontend | `frontend/` | `npm run start` |
-| backend | `backend/` | `uvicorn backend.main:app --host 0.0.0.0 --port $PORT` |
-| worker | `worker/` | `python worker/main.py` |
-| bot | `bot/` | `uvicorn bot.main:app --host 0.0.0.0 --port $PORT` |
+- **Frontend:** Next.js 14, React
+- **Backend:** FastAPI, PostgreSQL, Redis
+- **AI:** LangGraph, LangChain, OpenRouter API
+- **Integrations:** Gmail (IMAP/SMTP), Google Calendar, Telegram, Notion, HubSpot
+- **Deploy:** Railway (monorepo with 4 services)
 
 ---
 
-## Environment Variables
+## Local development
 
-Copy `.env.example` → `.env` and fill all values.
+Clone the repo, set up your `.env` (copy from `.env.example`), and you're off.
 
-| Variable | Used by | Description |
-|----------|---------|-------------|
-| `OPENROUTER_API_KEY` | worker | LLM access via OpenRouter |
-| `DATABASE_URL` | all Python services | PostgreSQL connection string |
-| `REDIS_URL` | all Python services | Redis connection string |
-| `ENCRYPTION_KEY` | backend, bot, worker | Fernet key for credential encryption |
-| `BACKEND_URL` | frontend | FastAPI public URL |
-| `FRONTEND_URL` | backend | Next.js public URL (for CORS) |
-| `NEXT_PUBLIC_API_URL` | frontend (browser) | Backend URL exposed to browser |
-| `TELEGRAM_WEBHOOK_SECRET` | bot | Webhook verification header |
-
-Generate encryption key once:
 ```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
-
----
-
-## Database Migrations
-
-Run from repo root with `DATABASE_URL` set:
-```bash
-alembic upgrade head
-```
-
-This creates all 6 tables and seeds the default user + agent config.
-
----
-
-## Local Development
-
-### Backend
-```bash
+# Backend
 pip install -r backend/requirements.txt
 uvicorn backend.main:app --reload
-```
 
-### Frontend
-```bash
-cd frontend
-cp .env.local.example .env.local
-npm install
-npm run dev
-```
+# Frontend
+cd frontend && npm install && npm run dev
 
-### Worker
-```bash
+# Worker (consumes agent jobs)
 pip install -r worker/requirements.txt
 python worker/main.py
-```
 
-### Bot
-```bash
+# Bot (Telegram webhook)
 pip install -r bot/requirements.txt
 uvicorn bot.main:app --port 8001
 ```
 
+Don’t forget to run migrations:
+
+```bash
+alembic upgrade head
+```
+
 ---
 
-## Features
+## Environment variables
 
-- **Dashboard** — Real-time agent status, live activity feed via WebSocket, one-click agent run
-- **Connections** — Encrypted credential management for Gmail, Telegram, HubSpot, Notion
-- **Agent Config** — System prompt, tool toggles, run schedule, approval rules
-- **Action Log** — Paginated, filterable table with full input/output detail
-- **Approvals** — Real-time pending approvals, approve/reject from dashboard or Telegram
-- **Settings** — Notification preferences, danger zone with confirmation dialogs
+Copy `.env.example` to `.env` and fill in your values. Key ones:
 
-## Agent Tools
+| Variable | What it's for |
+|----------|----------------|
+| `OPENROUTER_API_KEY` | Powers the AI (get one at [openrouter.ai](https://openrouter.ai)) |
+| `DATABASE_URL` | PostgreSQL connection |
+| `REDIS_URL` | For job queue and real-time updates |
+| `ENCRYPTION_KEY` | Keeps credentials safe (generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`) |
 
-| Tool | Description | Approval |
-|------|-------------|----------|
-| `read_gmail` | Read unread emails via IMAP | No |
-| `send_email` | Send email via SMTP | Always |
+Full list is in `.env.example`.
+
+---
+
+## Deploying to Railway
+
+1. Connect your GitHub repo to Railway
+2. Add the environment variables per service
+3. Run `alembic upgrade head` once
+4. For Telegram: connect in the dashboard, then click **Register Webhook**
+
+That’s it. Railway will handle the rest.
+
+---
+
+## Agent tools
+
+| Tool | What it does | Needs approval? |
+|------|--------------|-----------------|
+| `read_gmail` | Read unread emails | No |
+| `send_email` | Send email via Gmail | Always |
+| `read_calendar` | Fetch upcoming events | No |
+| `create_calendar_event` | Add an event | Configurable |
 | `search_web` | DuckDuckGo search | No |
-| `read_webpage` | Extract article text from URL | No |
-| `create_notion_task` | Create Notion database page | Configurable |
-| `log_to_hubspot` | Create/update HubSpot contact + note | Configurable |
-| `send_telegram_message` | Send Telegram message | No |
+| `read_webpage` | Extract text from URL | No |
+| `create_notion_task` | Create Notion page | Configurable |
+| `log_to_hubspot` | Update contact + note | Configurable |
+| `send_telegram_message` | Send you a message | No |
 
 ---
 
-## Deployment (Railway)
+## License
 
-1. Push to `main` branch — Railway auto-deploys all four services.
-2. Set all environment variables per service in the Railway dashboard.
-3. Run `alembic upgrade head` once via Railway shell or a one-off command.
-4. Register the Telegram webhook:
-   ```
-   https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://{BOT_URL}/webhook/telegram&secret_token={TELEGRAM_WEBHOOK_SECRET}
-   ```
+MIT. Use it, tweak it, make it yours.

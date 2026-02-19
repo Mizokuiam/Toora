@@ -45,6 +45,7 @@ export interface AgentConfig {
   enabled_tools: Record<string, boolean>;
   schedule: string;
   system_prompt: string | null;
+  memory: string | null;
   approval_rules: Record<string, boolean>;
 }
 
@@ -111,8 +112,11 @@ export const registerTelegramWebhook = () =>
 
 // ── Agent ─────────────────────────────────────────────────────────────────────
 
-export const runAgent = () =>
-  apiFetch<{ message: string }>("/api/agent/run", { method: "POST" });
+export const runAgent = (input?: string) =>
+  apiFetch<{ message: string }>("/api/agent/run", {
+    method: "POST",
+    body: JSON.stringify(input ? { input } : {}),
+  });
 
 export const getAgentStatus = () => apiFetch<AgentStatus>("/api/agent/status");
 

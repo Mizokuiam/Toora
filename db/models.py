@@ -161,6 +161,7 @@ class AgentConfig(Base):
         String(20), nullable=False, default="manual"
     )  # manual | 30min | 1hour | 4hours
     system_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    memory: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     approval_rules: Mapped[Dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )

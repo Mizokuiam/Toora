@@ -44,6 +44,23 @@ async def send_message(
         return r.json()
 
 
+BOT_COMMANDS = [
+    {"command": "start", "description": "Welcome & how to use"},
+    {"command": "help", "description": "Get help"},
+    {"command": "brief", "description": "Get a fresh briefing"},
+    {"command": "status", "description": "Check agent status"},
+]
+
+
+async def set_bot_commands(bot_token: str) -> None:
+    """Set the bot command menu (BotFather style)."""
+    async with httpx.AsyncClient(timeout=10) as client:
+        await client.post(
+            _url(bot_token, "setMyCommands"),
+            json={"commands": BOT_COMMANDS},
+        )
+
+
 async def register_webhook(bot_token: str, webhook_url: str, secret_token: Optional[str] = None) -> str:
     """Register Telegram webhook. Returns result message."""
     params: Dict[str, str] = {"url": webhook_url}
@@ -54,8 +71,21 @@ async def register_webhook(bot_token: str, webhook_url: str, secret_token: Optio
         r.raise_for_status()
         data = r.json()
         if data.get("ok"):
+            await set_bot_commands(bot_token)
             return "Webhook registered successfully."
         return data.get("description", "Unknown error")
+
+
+def build_briefing_keyboard(frontend_url: str) -> List[List[Dict[str, Any]]]:
+    """Inline keyboard for briefing message: Run again, Dashboard, Approvals."""
+    base = frontend_url.rstrip("/")
+    return [
+        [{"text": "🔄 Run again", "callback_data": "run_agent"}],
+        [
+            {"text": "📊 Dashboard", "url": f"{base}"},
+            {"text": "⚙️ Approvals", "url": f"{base}/approvals"},
+        ],
+    ]
 
 
 def build_approval_keyboard(approval_id: int) -> List[List[Dict[str, str]]]:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import logging
 from typing import Any, Dict, Optional
 
@@ -34,23 +35,25 @@ async def _get_user_config() -> Dict[str, Any]:
         )
         cfg = result.scalar_one_or_none()
         if not cfg:
-            return {"enabled_tools": {}, "system_prompt": None, "approval_rules": {}}
+            return {"enabled_tools": {}, "system_prompt": None, "memory": None, "approval_rules": {}}
         return {
             "enabled_tools": cfg.enabled_tools or {},
             "system_prompt": cfg.system_prompt,
+            "memory": cfg.memory,
             "approval_rules": cfg.approval_rules or {},
         }
 
 
 async def _send_summary_to_telegram(summary: str) -> None:
-    """Send agent run summary to Telegram if connected."""
+    """Send agent run summary to Telegram with action menu (BotFather style)."""
     try:
         from agent.approval import _get_telegram_creds
-        from agent.integrations.telegram import send_message
+        from agent.integrations.telegram import build_briefing_keyboard, send_message
         creds = await _get_telegram_creds()
         if creds:
             text = f"*🤖 Toora briefing*\n\n{summary[:4000]}"
-            await send_message(creds, text)
+            frontend_url = os.environ.get("FRONTEND_URL", "https://frontend-production-8833b.up.railway.app")
+            await send_message(creds, text, build_briefing_keyboard(frontend_url))
             log.info("Summary sent to Telegram.")
     except Exception as exc:
         log.warning("Failed to send summary to Telegram: %s", exc)
@@ -82,12 +85,16 @@ async def run_agent(run_id: int, user_input: str = "Process my inbox and provide
     enabled = config.get("enabled_tools", {})
     active_tools = [t for t in ALL_TOOLS if enabled.get(t.name, True)]
 
-    system_prompt = (
+    base_prompt = (
         config.get("system_prompt")
         or "You are Toora, an autonomous AI executive assistant for a small business owner. "
            "Process the user's inbox, research relevant topics, and take action where needed. "
            "Always be concise, professional, and proactive."
     )
+    memory = (config.get("memory") or "").strip()
+    system_prompt = base_prompt
+    if memory:
+        system_prompt = f"{base_prompt}\n\n**Things to remember about this user:**\n{memory}"
 
     llm = ChatOpenAI(
         model=MODEL,

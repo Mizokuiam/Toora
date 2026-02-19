@@ -1,11 +1,12 @@
 """
 bot/handler.py — Parses Telegram callback_query and message events.
-Resolves approvals in DB and publishes to Redis; responds to /start.
+Resolves approvals in DB and publishes to Redis; responds to /start, /brief, /status.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any, Dict
 
 import httpx
@@ -16,9 +17,11 @@ from backend.services.approval_svc import resolve
 
 log = logging.getLogger(__name__)
 
+BACKEND_URL = os.environ.get("BACKEND_URL", "https://toora-production.up.railway.app")
+
 
 async def handle_message(message: Dict[str, Any]) -> None:
-    """Process Telegram message updates (e.g. /start)."""
+    """Process Telegram message updates (e.g. /start, /brief, /status)."""
     text = (message.get("text") or "").strip()
     chat_id = message.get("chat", {}).get("id")
     if not chat_id:
@@ -26,12 +29,61 @@ async def handle_message(message: Dict[str, Any]) -> None:
 
     if text in ("/start", "/help"):
         reply = (
-            "👋 Hello! I'm the Toora assistant bot.\n\n"
-            "I send approval requests when the agent needs your confirmation. "
-            "Tap the buttons to approve or reject.\n\n"
-            "To run the agent, use the Toora dashboard."
+            "👋 *Welcome to Toora!*\n\n"
+            "I'm your AI executive assistant. Here's what you can do:\n\n"
+            "• `/brief` — Get a fresh briefing (reads inbox, summarizes)\n"
+            "• `/status` — Check if the agent is running\n\n"
+            "When the agent needs your approval (e.g. to send an email), "
+            "I'll send you buttons to approve or reject.\n\n"
+            "You can also use the [Dashboard](https://frontend-production-8833b.up.railway.app) for more."
         )
         await _send_message(chat_id, reply)
+        return
+
+    if text == "/brief":
+        ok = await _trigger_agent_run()
+        reply = "🚀 Agent started! You'll get your briefing shortly." if ok else "⚠️ Could not start agent. Check the dashboard."
+        await _send_message(chat_id, reply)
+        return
+
+    if text == "/status":
+        status = await _get_agent_status()
+        reply = f"📊 *Agent status:* {status}"
+        await _send_message(chat_id, reply)
+        return
+
+
+async def _trigger_agent_run() -> bool:
+    """POST to backend to queue an agent run."""
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.post(f"{BACKEND_URL.rstrip('/')}/api/agent/run", json={})
+            return r.status_code == 200
+    except Exception as exc:
+        log.error("Failed to trigger agent run: %s", exc)
+        return False
+
+
+async def _get_agent_status() -> str:
+    """GET agent status from backend."""
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(f"{BACKEND_URL.rstrip('/')}/api/agent/status")
+            if r.status_code == 200:
+                data = r.json()
+                return data.get("status", "unknown")
+    except Exception as exc:
+        log.error("Failed to get agent status: %s", exc)
+    return "unknown"
+
+
+async def handle_run_agent_callback(chat_id: int, callback_id: str) -> None:
+    """Handle 'run_agent' callback - trigger job and answer."""
+    ok = await _trigger_agent_run()
+    text = "🚀 Started! Briefing on its way 📬" if ok else "⚠️ Could not start. Try the dashboard."
+    await _answer_callback(callback_id, text)
+    if ok:
+        await _send_message(chat_id, "Agent is running. You'll get your briefing in a moment.")
 
 
 def _parse_callback_data(data: str) -> tuple[int, bool] | None:
@@ -53,14 +105,21 @@ def _parse_callback_data(data: str) -> tuple[int, bool] | None:
 
 async def handle_callback_query(callback_query: Dict[str, Any]) -> None:
     """Process a Telegram callback_query update."""
-    settings = get_settings(required=["DATABASE_URL", "REDIS_URL"])
     data = callback_query.get("data", "")
-    parsed = _parse_callback_data(data)
+    chat_id = callback_query.get("message", {}).get("chat", {}).get("id")
+    callback_id = callback_query.get("id")
 
+    if data == "run_agent":
+        if chat_id:
+            await handle_run_agent_callback(chat_id, callback_id)
+        return
+
+    parsed = _parse_callback_data(data)
     if parsed is None:
         log.warning("Unrecognised callback data: %r", data)
         return
 
+    settings = get_settings(required=["DATABASE_URL", "REDIS_URL"])
     approval_id, approved = parsed
 
     async with session_context() as db:
@@ -124,6 +183,6 @@ async def _send_message(chat_id: int, text: str) -> None:
     url = f"https://api.telegram.org/bot{tg_token}/sendMessage"
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            await client.post(url, json={"chat_id": chat_id, "text": text})
+            await client.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"})
     except Exception as exc:
         log.error("Failed to send Telegram message: %s", exc)

@@ -4,10 +4,10 @@ backend/routers/agent.py — /api/agent routes.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Body, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.schemas import AgentConfigOut, AgentConfigUpdate, AgentStatusOut
+from backend.schemas import AgentConfigOut, AgentConfigUpdate, AgentRunRequest, AgentStatusOut
 from backend.services import agent_svc
 from db.base import get_session
 
@@ -15,9 +15,10 @@ router = APIRouter(prefix="/api/agent", tags=["agent"])
 
 
 @router.post("/run")
-async def run_agent(request: Request):
+async def run_agent(request: Request, body: AgentRunRequest | None = Body(default=None)):
     redis_url: str = request.app.state.redis_url
-    await agent_svc.push_run_job(redis_url)
+    user_input = body.input if body and body.input else None
+    await agent_svc.push_run_job(redis_url, user_input)
     return {"message": "Agent job queued."}
 
 

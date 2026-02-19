@@ -54,6 +54,7 @@ class AgentConfigOut(BaseModel):
     enabled_tools: Dict[str, bool]
     schedule: str
     system_prompt: Optional[str] = None
+    memory: Optional[str] = None
     approval_rules: Dict[str, bool]
 
     model_config = {"from_attributes": True}
@@ -63,7 +64,12 @@ class AgentConfigUpdate(BaseModel):
     enabled_tools: Optional[Dict[str, bool]] = None
     schedule: Optional[str] = None
     system_prompt: Optional[str] = None
+    memory: Optional[str] = None
     approval_rules: Optional[Dict[str, bool]] = None
+
+
+class AgentRunRequest(BaseModel):
+    input: Optional[str] = None
 
 
 # ── Logs ──────────────────────────────────────────────────────────────────────

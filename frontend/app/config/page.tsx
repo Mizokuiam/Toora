@@ -11,6 +11,8 @@ import { Loader2, Save } from "lucide-react";
 const TOOLS: { key: string; label: string; description: string }[] = [
   { key: "read_gmail", label: "Read Gmail", description: "Read unread emails from inbox" },
   { key: "send_email", label: "Send Email", description: "Draft and send emails (always requires approval)" },
+  { key: "read_calendar", label: "Read Calendar", description: "Fetch upcoming Google Calendar events" },
+  { key: "create_calendar_event", label: "Create Calendar Event", description: "Add events to Google Calendar" },
   { key: "search_web", label: "Search Web", description: "DuckDuckGo search queries" },
   { key: "read_webpage", label: "Read Webpage", description: "Extract clean text from a URL" },
   { key: "create_notion_task", label: "Create Notion Task", description: "Create tasks in Notion database" },
@@ -20,6 +22,7 @@ const TOOLS: { key: string; label: string; description: string }[] = [
 
 const APPROVAL_ACTIONS = [
   { key: "send_email", label: "Sending emails" },
+  { key: "create_calendar_event", label: "Creating calendar events" },
   { key: "create_notion_task", label: "Creating Notion tasks" },
   { key: "log_to_hubspot", label: "Logging to HubSpot" },
 ];
@@ -76,6 +79,20 @@ export default function ConfigPage() {
           placeholder="Describe your business and give the agent custom instructions…"
           value={config.system_prompt ?? ""}
           onChange={(e) => setConfig({ ...config, system_prompt: e.target.value })}
+        />
+      </section>
+
+      {/* Memory / Preferences */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Memory & Preferences</h2>
+        <p className="text-xs text-zinc-600">
+          Things for the agent to remember across runs (e.g. "Prefer short emails", "Always CC finance@example.com").
+        </p>
+        <textarea
+          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none min-h-24 resize-none"
+          placeholder="Add notes the agent should always consider…"
+          value={config.memory ?? ""}
+          onChange={(e) => setConfig({ ...config, memory: e.target.value })}
         />
       </section>
 

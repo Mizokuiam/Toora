@@ -49,6 +49,7 @@ export default function DashboardPage() {
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [recentLogs, setRecentLogs] = useState<ActionLog[]>([]);
   const [running, setRunning] = useState(false);
+  const [customInput, setCustomInput] = useState("");
 
   const load = () => {
     getTodayStats().then(setStats).catch(() => {});
@@ -67,7 +68,8 @@ export default function DashboardPage() {
   const handleRun = async () => {
     setRunning(true);
     try {
-      await runAgent();
+      await runAgent(customInput.trim() || undefined);
+      setCustomInput("");
       setTimeout(load, 2000);
     } finally {
       setRunning(false);
@@ -81,14 +83,23 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-zinc-100">Dashboard</h1>
           <p className="text-sm text-zinc-500">Today's overview</p>
         </div>
-        <button
-          onClick={handleRun}
-          disabled={running || agentStatus?.status === "running"}
-          className="flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50 transition-colors"
-        >
-          {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          Run Agent Now
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <input
+            type="text"
+            placeholder="Or give a custom instruction (e.g. Summarize urgent emails only)"
+            value={customInput}
+            onChange={(e) => setCustomInput(e.target.value)}
+            className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none"
+          />
+          <button
+            onClick={handleRun}
+            disabled={running || agentStatus?.status === "running"}
+            className="flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50 transition-colors"
+          >
+            {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            Run Agent Now
+          </button>
+        </div>
       </div>
 
       {/* Stats */}

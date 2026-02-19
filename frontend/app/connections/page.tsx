@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { listIntegrations, type Integration } from "@/lib/api";
 import { IntegrationCard } from "@/components/IntegrationCard";
-import { Mail, MessageCircle, Building2, FileText } from "lucide-react";
+import { Mail, MessageCircle, Building2, FileText, Calendar } from "lucide-react";
 
 const PLATFORMS = [
   {
@@ -38,6 +38,31 @@ const PLATFORMS = [
         label: "Chat ID",
         type: "text" as const,
         hint: "Send /start to your bot then check getUpdates",
+      },
+    ],
+  },
+  {
+    platform: "google_calendar",
+    label: "Google Calendar",
+    description: "Read events and create calendar entries",
+    icon: <Calendar className="h-5 w-5 text-blue-500" />,
+    fields: [
+      {
+        key: "client_id",
+        label: "OAuth Client ID",
+        type: "text" as const,
+        hint: "From Google Cloud Console → APIs & Services → Credentials",
+      },
+      {
+        key: "client_secret",
+        label: "OAuth Client Secret",
+        type: "password" as const,
+      },
+      {
+        key: "refresh_token",
+        label: "Refresh Token",
+        type: "password" as const,
+        hint: "Get from OAuth Playground with Calendar scope",
       },
     ],
   },

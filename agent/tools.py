@@ -162,6 +162,51 @@ def read_webpage(url: str) -> str:
 
 
 @tool
+def read_calendar(max_results: int = 10, days_ahead: int = 7) -> str:
+    """Read upcoming events from Google Calendar. Returns a JSON list of events."""
+    async def _impl():
+        creds = await _get_creds("google_calendar")
+        if not creds:
+            return json.dumps({"error": "Google Calendar not configured."})
+        from agent.integrations.google_calendar import list_upcoming_events
+        events = list_upcoming_events(creds, max_results, days_ahead)
+        await _log_action("read_calendar", {"max_results": max_results, "days_ahead": days_ahead}, {"count": len(events), "events": events})
+        return json.dumps(events)
+    return _run(_impl())
+
+
+@tool
+def create_calendar_event(summary: str, start_datetime: str, end_datetime: str = "", description: str = "") -> str:
+    """Create an event in Google Calendar. start_datetime and end_datetime must be ISO 8601 (e.g. 2026-02-20T14:00:00Z).
+    If end_datetime is empty, defaults to 1 hour after start. May require approval."""
+    async def _impl():
+        rules = await _get_approval_rules()
+        requires = rules.get("create_calendar_event", False)
+        decision = True
+        if requires:
+            from agent.approval import require_approval
+            decision = await require_approval(
+                run_id=_current_run_id,
+                action_description=f"Create calendar event: {summary}",
+                full_context={"summary": summary, "start": start_datetime, "end": end_datetime},
+            )
+        status = "approved" if decision else ("rejected" if decision is False else "expired")
+        if decision:
+            creds = await _get_creds("google_calendar")
+            if not creds:
+                await _log_action("create_calendar_event", {"summary": summary}, {"error": "Google Calendar not configured."}, requires, status if requires else None)
+                return "Google Calendar not configured."
+            from agent.integrations.google_calendar import create_event
+            end = end_datetime.strip() or None
+            result = create_event(creds, summary, start_datetime, end, description)
+            await _log_action("create_calendar_event", {"summary": summary}, {"id": result.get("id")}, requires, status if requires else None)
+            return f"Calendar event created: {result.get('htmlLink', result.get('id'))}"
+        await _log_action("create_calendar_event", {"summary": summary}, {"created": False}, requires, status)
+        return f"Event not created — decision: {status}."
+    return _run(_impl())
+
+
+@tool
 def create_notion_task(title: str, content: str = "") -> str:
     """Create a task in the user's Notion database. May require approval."""
     async def _impl():
@@ -241,6 +286,8 @@ def send_telegram_message(text: str) -> str:
 ALL_TOOLS = [
     read_gmail,
     send_email,
+    read_calendar,
+    create_calendar_event,
     search_web,
     read_webpage,
     create_notion_task,
