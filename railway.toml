@@ -1,14 +1,51 @@
-# Toora — Root Railway configuration for Python services.
-# web/backend service: start command is set in Railway dashboard as:
-#   sh -c "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
-# bot service: sh -c "uvicorn bot.main:app --host 0.0.0.0 --port $PORT"
-# worker service: python worker/main.py
-# frontend service: overridden by frontend/railway.toml (uses Nixpacks)
+# Toora monorepo — Railway service configuration
+# Each [[services]] block maps to a service in Railway by name.
+# Railway reads this file and applies config per matched service name.
 
-[build]
+[[services]]
+name = "web"
+
+[services.build]
 builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
-[deploy]
+[services.deploy]
+startCommand = "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "worker"
+
+[services.build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[services.deploy]
+startCommand = "python worker/main.py"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "bot"
+
+[services.build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[services.deploy]
+startCommand = "uvicorn bot.main:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "frontend"
+
+[services.build]
+builder = "dockerfile"
+dockerfilePath = "frontend/Dockerfile"
+
+[services.deploy]
+startCommand = "node server.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
