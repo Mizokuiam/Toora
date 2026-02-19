@@ -114,7 +114,13 @@ export function IntegrationCard({
       )}
 
       {expanded && (
-        <div className="mt-4 space-y-3 border-t border-zinc-800 pt-4">
+        <form
+          className="mt-4 space-y-3 border-t border-zinc-800 pt-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+        >
           {fields.map((f) => (
             <div key={f.key}>
               <label className="block text-xs font-medium text-zinc-400 mb-1">{f.label}</label>
@@ -124,6 +130,7 @@ export function IntegrationCard({
                 onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none"
                 placeholder={f.label}
+                autoComplete={f.type === "password" ? "current-password" : "off"}
               />
               {f.hint && <p className="mt-1 text-xs text-zinc-600">{f.hint}</p>}
             </div>
@@ -144,7 +151,7 @@ export function IntegrationCard({
 
           <div className="flex gap-2">
             <button
-              onClick={handleSave}
+              type="submit"
               disabled={saving}
               className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50 transition-colors"
             >
@@ -152,6 +159,7 @@ export function IntegrationCard({
               Save
             </button>
             <button
+              type="button"
               onClick={handleTest}
               disabled={testing || !connected}
               className="flex items-center gap-2 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
@@ -161,6 +169,7 @@ export function IntegrationCard({
             </button>
             {connected && (
               <button
+                type="button"
                 onClick={handleDisconnect}
                 className="rounded-lg border border-red-900 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
               >
@@ -168,7 +177,7 @@ export function IntegrationCard({
               </button>
             )}
           </div>
-        </div>
+        </form>
       )}
     </div>
   );

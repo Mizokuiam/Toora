@@ -1,6 +1,6 @@
 """
 bot/main.py — FastAPI Telegram webhook listener.
-Receives updates from Telegram and dispatches callback_query events to the handler.
+Receives updates from Telegram and dispatches callback_query and message events.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from fastapi import FastAPI, Header, HTTPException, Request
 
-from bot.handler import handle_callback_query
+from bot.handler import handle_callback_query, handle_message
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -42,6 +42,8 @@ async def telegram_webhook(
 
     if "callback_query" in update:
         await handle_callback_query(update["callback_query"])
+    elif "message" in update:
+        await handle_message(update["message"])
 
     # Always return 200 so Telegram stops retrying
     return {"ok": True}
