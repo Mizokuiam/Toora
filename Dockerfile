@@ -19,5 +19,5 @@ COPY . .
 
 ENV PYTHONPATH=/app
 
-# Start command is overridden per service in railway.toml
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use $PORT for Railway (default 8000 for local)
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
