@@ -1,14 +1,15 @@
 # frontend/Dockerfile — built with rootDirectory=frontend in Railway.
-# Build context is the frontend/ directory, so paths are relative to frontend/.
+# Build context is the frontend/ directory.
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
-ARG CACHEBUST=1
 RUN npm ci
 
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+# Copy CSS early to bust cache when it changes
+COPY app/globals.css ./app/globals.css
 COPY . .
 RUN npm run build
 
