@@ -1,11 +1,19 @@
-# Toora monorepo — railway.toml service configuration.
-# Each [[services]] block configures one Railway service.
-# Services must be manually created in the Railway dashboard first.
-# This file is picked up automatically when the GitHub repo is connected.
+# Toora — Railway per-service configuration.
+# Both 'web' and 'worker' use the root Dockerfile.
+# railway.toml is scoped to the service Railway links it to.
+# Since railway.toml is at the repo root and Railway reads it per-service,
+# the start command below applies to whichever service is currently deploying.
+# The WORKER service must have its Start Command set to:
+#   python worker/main.py
+# in the Railway dashboard (Service Settings → Deploy → Start Command).
 
-# ── worker ────────────────────────────────────────────────────────────────────
-# Uses the root Dockerfile. No rootDirectory needed.
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
 [deploy]
-startCommand = "python worker/main.py"
+startCommand = "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

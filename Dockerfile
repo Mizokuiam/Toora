@@ -1,23 +1,30 @@
-# Root Dockerfile — builds the worker service by default.
-# Railway uses this when the worker service has no explicit rootDirectory.
-# The backend and bot services each have their own Dockerfile in their subdirectory.
+# Root Dockerfile — used by both the 'web' (backend) and 'worker' services.
+# Railway overrides CMD per service via "Start Command" in the dashboard.
+# Default CMD here = backend (FastAPI), since 'web' is the public-facing service.
+# Worker service overrides CMD to: python worker/main.py
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# System deps (needed by some Python packages)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install worker dependencies
+# Install all Python dependencies (backend + worker + bot share most of them)
+COPY backend/requirements.txt ./backend/requirements.txt
 COPY worker/requirements.txt ./worker/requirements.txt
-RUN pip install --no-cache-dir -r worker/requirements.txt
+COPY bot/requirements.txt ./bot/requirements.txt
 
-# Copy full repo so relative imports (core/, db/, agent/) work
+RUN pip install --no-cache-dir \
+    -r backend/requirements.txt \
+    -r worker/requirements.txt \
+    -r bot/requirements.txt
+
+# Copy full repo so all packages (core/, db/, agent/, backend/, worker/, bot/) are importable
 COPY . .
 
 ENV PYTHONPATH=/app
+EXPOSE 8000
 
-# Default CMD = worker. Railway overrides this via Start Command in dashboard.
-CMD ["python", "worker/main.py"]
+# Default: backend (FastAPI). Worker service overrides this to: python worker/main.py
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
