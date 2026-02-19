@@ -11,37 +11,80 @@ import {
   type ActionLog,
 } from "@/lib/api";
 import { LiveFeed } from "@/components/LiveFeed";
-import { Mail, ListTodo, Clock, CheckSquare, Play, Loader2 } from "lucide-react";
+import { Mail, ListTodo, Clock, CheckSquare, Play, Loader2, TrendingUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 function StatCard({
   label,
   value,
+  description,
   icon: Icon,
+  trend,
 }: {
   label: string;
   value: number | string;
+  description?: string;
   icon: React.ElementType;
+  trend?: { value: string; up: boolean };
 }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-zinc-500">{label}</p>
-        <Icon className="h-4 w-4 text-zinc-600" />
-      </div>
-      <p className="mt-2 text-3xl font-bold text-zinc-100">{value}</p>
-    </div>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {label}
+        </CardTitle>
+        <Icon className="size-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        {(description || trend) && (
+          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+            {trend && (
+              <span
+                className={cn(
+                  "flex items-center gap-0.5 font-medium",
+                  trend.up ? "text-emerald-500" : "text-amber-500"
+                )}
+              >
+                <TrendingUp className={cn("size-3", !trend.up && "rotate-180")} />
+                {trend.value}
+              </span>
+            )}
+            {description && <span>{description}</span>}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  completed: "bg-emerald-500/10 text-emerald-400",
-  running: "bg-blue-500/10 text-blue-400",
-  failed: "bg-red-500/10 text-red-400",
-  approved: "bg-emerald-500/10 text-emerald-400",
-  rejected: "bg-red-500/10 text-red-400",
-  pending: "bg-amber-500/10 text-amber-400",
-  expired: "bg-zinc-700 text-zinc-400",
+  completed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  running: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  failed: "bg-red-500/10 text-red-400 border-red-500/20",
+  approved: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  rejected: "bg-red-500/10 text-red-400 border-red-500/20",
+  pending: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  expired: "bg-muted text-muted-foreground",
 };
 
 export default function DashboardPage() {
@@ -78,35 +121,48 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Dashboard</h1>
-          <p className="text-sm text-zinc-500">Today's overview</p>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Today&apos;s overview</p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <input
-            type="text"
-            placeholder="Or give a custom instruction (e.g. Summarize urgent emails only)"
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Input
+            placeholder="Or give a custom instruction..."
             value={customInput}
             onChange={(e) => setCustomInput(e.target.value)}
-            className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none"
+            className="sm:w-80"
           />
-          <button
+          <Button
             onClick={handleRun}
             disabled={running || agentStatus?.status === "running"}
-            className="flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50 transition-colors"
           >
-            {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
             Run Agent Now
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Emails Processed" value={stats?.emails_processed ?? "—"} icon={Mail} />
-        <StatCard label="Tasks Created" value={stats?.tasks_created ?? "—"} icon={ListTodo} />
-        <StatCard label="Pending Approvals" value={stats?.approvals_pending ?? "—"} icon={CheckSquare} />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Emails Processed"
+          value={stats?.emails_processed ?? "—"}
+          description="Today"
+          icon={Mail}
+        />
+        <StatCard
+          label="Tasks Created"
+          value={stats?.tasks_created ?? "—"}
+          description="Today"
+          icon={ListTodo}
+        />
+        <StatCard
+          label="Pending Approvals"
+          value={stats?.approvals_pending ?? "—"}
+          description="Awaiting action"
+          icon={CheckSquare}
+        />
         <StatCard
           label="Last Run"
           value={
@@ -120,55 +176,64 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Live Feed */}
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
-            Live Activity
-          </h2>
-          <LiveFeed />
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Live Activity</CardTitle>
+            <CardDescription>Real-time agent updates</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LiveFeed />
+          </CardContent>
+        </Card>
 
         {/* Recent Actions */}
-        <div>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500">
-            Recent Actions
-          </h2>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Actions</CardTitle>
+            <CardDescription>Latest tool usage</CardDescription>
+          </CardHeader>
+          <CardContent>
             {recentLogs.length === 0 ? (
-              <div className="flex h-32 items-center justify-center text-sm text-zinc-600">
+              <div className="flex h-32 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
                 No actions yet
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-zinc-800">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">Tool</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tool</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {recentLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-zinc-800/50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-violet-400">{log.tool_used}</td>
-                      <td className="px-4 py-3 text-zinc-500">
+                    <TableRow key={log.id}>
+                      <TableCell className="font-mono text-xs text-primary">
+                        {log.tool_used}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
                         {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            STATUS_BADGE[log.approval_status ?? "completed"] ?? "bg-zinc-700 text-zinc-400"
-                          }`}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "font-normal border",
+                            STATUS_BADGE[log.approval_status ?? "completed"] ??
+                              "bg-muted text-muted-foreground"
+                          )}
                         >
                           {log.approval_status ?? "done"}
-                        </span>
-                      </td>
-                    </tr>
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

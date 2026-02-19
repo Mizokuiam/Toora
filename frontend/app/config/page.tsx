@@ -67,8 +67,8 @@ export default function ConfigPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Agent Configuration</h1>
-        <p className="text-sm text-zinc-500">Customise how Toora behaves for your business.</p>
+        <h1 className="text-2xl font-bold tracking-tight">Agent Configuration</h1>
+        <p className="text-sm text-muted-foreground">Customise how Toora behaves for your business.</p>
       </div>
 
       {/* System Prompt */}

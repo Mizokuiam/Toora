@@ -32,21 +32,21 @@ export function LiveFeed() {
 
   if (items.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-lg border border-zinc-800 text-sm text-zinc-600">
+      <div className="flex h-32 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
         Waiting for agent activity…
       </div>
     );
   }
 
   return (
-    <div className="space-y-1 rounded-lg border border-zinc-800 bg-zinc-900 p-3 max-h-64 overflow-y-auto">
+    <div className="max-h-64 space-y-1 overflow-y-auto rounded-lg border bg-muted/20 p-3">
       {items.map((item) => (
         <div key={item.id} className="flex items-start gap-3 text-sm">
-          <span className="mt-0.5 shrink-0 rounded bg-violet-600/20 px-1.5 py-0.5 text-xs text-violet-400 font-mono">
+          <span className="mt-0.5 shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-mono text-primary">
             {item.type}
           </span>
-          <span className="flex-1 text-zinc-300">{item.text}</span>
-          <span className="shrink-0 text-xs text-zinc-600">
+          <span className="flex-1 text-muted-foreground">{item.text}</span>
+          <span className="shrink-0 text-xs text-muted-foreground/70">
             {formatDistanceToNow(item.time, { addSuffix: true })}
           </span>
         </div>

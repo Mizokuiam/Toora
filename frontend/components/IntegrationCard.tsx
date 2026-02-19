@@ -10,6 +10,10 @@ import {
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 interface Field {
   key: string;
@@ -104,46 +108,46 @@ export function IntegrationCard({
   };
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+    <Card>
+      <CardContent className="p-5">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800">
+          <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
             {icon}
           </div>
           <div>
-            <h3 className="font-semibold text-zinc-100">{label}</h3>
-            <p className="text-sm text-zinc-500">{description}</p>
+            <h3 className="font-semibold">{label}</h3>
+            <p className="text-sm text-muted-foreground">{description}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span
+          <Badge
+            variant={connected ? "default" : "secondary"}
             className={cn(
-              "rounded-full px-2.5 py-0.5 text-xs font-medium",
-              connected
-                ? "bg-emerald-500/10 text-emerald-400"
-                : "bg-zinc-700 text-zinc-400"
+              connected && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10"
             )}
           >
             {connected ? "Connected" : "Not connected"}
-          </span>
-          <button
+          </Badge>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setExpanded((v) => !v)}
-            className="rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
           >
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </button>
+            {expanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+          </Button>
         </div>
       </div>
 
       {connected && integration?.connected_at && (
-        <p className="mt-2 text-xs text-zinc-600">
+        <p className="mt-2 text-xs text-muted-foreground">
           Last connected {new Date(integration.connected_at).toLocaleString()}
         </p>
       )}
 
       {expanded && (
         <form
-          className="mt-4 space-y-3 border-t border-zinc-800 pt-4"
+          className="mt-4 space-y-3 border-t border-border pt-4"
           onSubmit={(e) => {
             e.preventDefault();
             handleSave();
@@ -151,16 +155,15 @@ export function IntegrationCard({
         >
           {fields.map((f) => (
             <div key={f.key}>
-              <label className="block text-xs font-medium text-zinc-400 mb-1">{f.label}</label>
-              <input
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">{f.label}</label>
+              <Input
                 type={f.type ?? "text"}
                 value={values[f.key] ?? ""}
                 onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none"
                 placeholder={f.label}
                 autoComplete={f.type === "password" ? "current-password" : "off"}
               />
-              {f.hint && <p className="mt-1 text-xs text-zinc-600">{f.hint}</p>}
+              {f.hint && <p className="mt-1 text-xs text-muted-foreground">{f.hint}</p>}
             </div>
           ))}
 
@@ -181,47 +184,46 @@ export function IntegrationCard({
             </p>
           )}
 
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50 transition-colors"
-            >
-              {saving && <Loader2 className="h-3 w-3 animate-spin" />}
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" disabled={saving} className="flex-1 min-w-24">
+              {saving && <Loader2 className="size-3 animate-spin" />}
               Save
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
               onClick={handleTest}
               disabled={testing || !connected}
-              className="flex items-center gap-2 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
             >
-              {testing && <Loader2 className="h-3 w-3 animate-spin" />}
+              {testing && <Loader2 className="size-3 animate-spin" />}
               Test
-            </button>
+            </Button>
             {platform === "telegram" && connected && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={handleRegisterWebhook}
                 disabled={registering}
-                className="flex items-center gap-2 rounded-lg border border-violet-700 px-4 py-2 text-sm text-violet-400 hover:bg-violet-500/10 disabled:opacity-50 transition-colors"
+                className="border-primary/50 text-primary"
               >
-                {registering && <Loader2 className="h-3 w-3 animate-spin" />}
+                {registering && <Loader2 className="size-3 animate-spin" />}
                 Register Webhook
-              </button>
+              </Button>
             )}
             {connected && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={handleDisconnect}
-                className="rounded-lg border border-red-900 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                className="border-destructive/50 text-destructive hover:bg-destructive/10"
               >
                 Disconnect
-              </button>
+              </Button>
             )}
           </div>
         </form>
       )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }

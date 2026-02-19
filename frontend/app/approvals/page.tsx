@@ -33,8 +33,8 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-100">Approvals</h1>
-        <p className="text-sm text-zinc-500">
+        <h1 className="text-2xl font-bold tracking-tight">Approvals</h1>
+        <p className="text-sm text-muted-foreground">
           Approve or reject agent actions. You can also respond from Telegram.
         </p>
       </div>
