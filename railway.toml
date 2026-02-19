@@ -10,5 +10,6 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
+# Start command is set per-service in Railway dashboard (via sh -c so $PORT expands)
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
