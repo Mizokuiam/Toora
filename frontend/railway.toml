@@ -1,0 +1,10 @@
+# frontend/railway.toml — overrides root railway.toml for the frontend service.
+# Uses Nixpacks (auto-detects Next.js) instead of Docker.
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
