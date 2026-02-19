@@ -31,10 +31,9 @@ name = "worker"
 
 [services.build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "Dockerfile.worker"
 
 [services.deploy]
-startCommand = "python worker/main.py"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
@@ -43,10 +42,9 @@ name = "bot"
 
 [services.build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "Dockerfile.bot"
 
 [services.deploy]
-startCommand = "sh -c \"uvicorn bot.main:app --host 0.0.0.0 --port $PORT\""
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
