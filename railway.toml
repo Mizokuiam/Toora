@@ -3,6 +3,18 @@
 # Railway reads this file and applies config per matched service name.
 
 [[services]]
+name = "Toora"
+
+[services.build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[services.deploy]
+startCommand = "sh -c \"uvicorn backend.main:app --host 0.0.0.0 --port $PORT\""
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[services]]
 name = "web"
 
 [services.build]
@@ -10,7 +22,7 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [services.deploy]
-startCommand = "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+startCommand = "sh -c \"uvicorn backend.main:app --host 0.0.0.0 --port $PORT\""
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
@@ -34,7 +46,7 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [services.deploy]
-startCommand = "uvicorn bot.main:app --host 0.0.0.0 --port $PORT"
+startCommand = "sh -c \"uvicorn bot.main:app --host 0.0.0.0 --port $PORT\""
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
