@@ -1,44 +1,36 @@
 """
-Fernet symmetric encryption for storing credentials in PostgreSQL.
-Encryption key must be in ENCRYPTION_KEY env var; never stored in DB or code.
+core/encryption.py — Fernet symmetric encryption for credential storage.
+Encryption key must live in ENCRYPTION_KEY env var; never hardcoded or logged.
 """
 
 from __future__ import annotations
 
-import base64
 import json
 from typing import Any, Dict
 
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet
 
-from core.config import require_env
-
-
-def _get_fernet() -> Fernet:
-    """Build Fernet from ENCRYPTION_KEY. Use Fernet.generate_key() to create a key."""
-    key = require_env("ENCRYPTION_KEY").strip()
-    return Fernet(key.encode("utf-8") if isinstance(key, str) else key)
+from core.config import get_settings
 
 
-def encrypt_value(plain: str | Dict[str, Any]) -> bytes:
-    """
-    Encrypt a string or JSON-serializable dict. Returns bytes for BYTEA storage.
-    Never log or print the plain value.
-    """
-    if isinstance(plain, dict):
-        plain = json.dumps(plain)
-    else:
-        plain = str(plain)
-    f = _get_fernet()
-    return f.encrypt(plain.encode("utf-8"))
+def _fernet() -> Fernet:
+    key = get_settings(required=["ENCRYPTION_KEY"]).encryption_key.strip()
+    return Fernet(key.encode() if isinstance(key, str) else key)
 
 
-def decrypt_value(encrypted: bytes) -> str:
-    """Decrypt bytes from DB to plain string. Raises on invalid token."""
-    f = _get_fernet()
-    return f.decrypt(encrypted).decode("utf-8")
+def encrypt_dict(payload: Dict[str, Any]) -> bytes:
+    """Encrypt a JSON-serialisable dict. Returns raw bytes for BYTEA storage."""
+    return _fernet().encrypt(json.dumps(payload).encode("utf-8"))
 
 
-def decrypt_json(encrypted: bytes) -> Dict[str, Any]:
-    """Decrypt and parse as JSON dict."""
-    return json.loads(decrypt_value(encrypted))
+def decrypt_dict(data: bytes) -> Dict[str, Any]:
+    """Decrypt bytes from DB and parse as JSON dict."""
+    return json.loads(_fernet().decrypt(data).decode("utf-8"))
+
+
+def encrypt_str(value: str) -> bytes:
+    return _fernet().encrypt(value.encode("utf-8"))
+
+
+def decrypt_str(data: bytes) -> str:
+    return _fernet().decrypt(data).decode("utf-8")
