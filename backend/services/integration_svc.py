@@ -12,6 +12,7 @@ import os
 from datetime import datetime, timezone
 from typing import Dict, List
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +42,20 @@ async def save_credentials(
         )
     )
     integration: Integration | None = result.scalar_one_or_none()
+
+    # Validate OpenRouter key before saving
+    if platform == "openrouter":
+        try:
+            mod = importlib.import_module("agent.integrations.openrouter")
+            await mod.test_connection(credentials)
+            log.info("OpenRouter key validated before save.")
+        except Exception as exc:
+            log.warning("OpenRouter key validation failed: %s", exc)
+            raise HTTPException(
+                status_code=400,
+                detail=str(exc),
+            ) from exc
+
     encrypted = encrypt_dict(credentials)
     now = datetime.now(tz=timezone.utc)
 
