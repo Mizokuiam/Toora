@@ -48,7 +48,6 @@ def load_settings(required: list[str] | None = None) -> Settings:
     that only need a subset of all variables).
     """
     _required_defaults = [
-        "OPENROUTER_API_KEY",
         "DATABASE_URL",
         "REDIS_URL",
         "ENCRYPTION_KEY",

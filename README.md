@@ -79,10 +79,11 @@ Copy `.env.example` to `.env` and fill in your values. Key ones:
 
 | Variable | What it's for |
 |----------|----------------|
-| `OPENROUTER_API_KEY` | Powers the AI (get one at [openrouter.ai](https://openrouter.ai)) |
 | `DATABASE_URL` | PostgreSQL connection |
 | `REDIS_URL` | For job queue and real-time updates |
 | `ENCRYPTION_KEY` | Keeps credentials safe (generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`) |
+
+**OpenRouter** (powers the AI): set in **Connections** on the dashboard, not as an env var.
 
 Full list is in `.env.example`.
 

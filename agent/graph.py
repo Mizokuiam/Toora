@@ -17,14 +17,38 @@ from langgraph.prebuilt import create_react_agent
 
 from agent.tools import ALL_TOOLS, set_run_id, set_main_loop
 from core.config import get_settings
+from core.encryption import decrypt_dict
 from db.base import session_context
-from db.models import AgentConfig, AgentRun
+from db.models import AgentConfig, AgentRun, Integration
 
 log = logging.getLogger(__name__)
 
 DEFAULT_USER_ID = 1
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 MODEL = "deepseek/deepseek-chat-v3-0324"
+
+
+async def _get_openrouter_api_key() -> str:
+    """Load OpenRouter API key from Connections (dashboard)."""
+    async with session_context() as db:
+        from sqlalchemy import select
+        result = await db.execute(
+            select(Integration).where(
+                Integration.user_id == DEFAULT_USER_ID,
+                Integration.platform == "openrouter",
+                Integration.status == "connected",
+            )
+        )
+        integration = result.scalar_one_or_none()
+    if not integration:
+        raise RuntimeError(
+            "OpenRouter not configured. Add your API key in Connections (openrouter.ai/keys)."
+        )
+    creds = decrypt_dict(integration.encrypted_credentials)
+    key = (creds.get("api_key") or "").strip()
+    if not key:
+        raise RuntimeError("OpenRouter API key is empty. Update it in Connections.")
+    return key
 
 
 async def _get_user_config() -> Dict[str, Any]:
@@ -73,7 +97,7 @@ async def _publish_status(redis_url: str, run_id: int, status: str, payload: Opt
 
 async def run_agent(run_id: int, user_input: str = "Process my inbox and provide a daily briefing.") -> str:
     """Run the LangGraph ReAct agent for the given run_id."""
-    settings = get_settings(required=["OPENROUTER_API_KEY", "DATABASE_URL", "REDIS_URL"])
+    settings = get_settings(required=["DATABASE_URL", "REDIS_URL", "ENCRYPTION_KEY"])
     set_run_id(run_id)
     set_main_loop(asyncio.get_running_loop())
 
@@ -96,10 +120,11 @@ async def run_agent(run_id: int, user_input: str = "Process my inbox and provide
     if memory:
         system_prompt = f"{base_prompt}\n\n**Things to remember about this user:**\n{memory}"
 
+    openrouter_key = await _get_openrouter_api_key()
     llm = ChatOpenAI(
         model=MODEL,
         base_url=OPENROUTER_BASE,
-        api_key=settings.openrouter_api_key,
+        api_key=openrouter_key,
         temperature=0.2,
     )
 

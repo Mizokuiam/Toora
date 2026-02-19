@@ -65,7 +65,7 @@ async def process_job(job: dict, redis_url: str) -> None:
 
 async def run_loop() -> None:
     settings = get_settings(
-        required=["DATABASE_URL", "REDIS_URL", "ENCRYPTION_KEY", "OPENROUTER_API_KEY"]
+        required=["DATABASE_URL", "REDIS_URL", "ENCRYPTION_KEY"]
     )
     log.info("Toora worker started. Listening on queue: %s", REDIS_JOB_QUEUE)
 

@@ -3,9 +3,23 @@
 import { useEffect, useState } from "react";
 import { listIntegrations, type Integration } from "@/lib/api";
 import { IntegrationCard } from "@/components/IntegrationCard";
-import { Mail, MessageCircle, Building2, FileText, Calendar } from "lucide-react";
+import { Mail, MessageCircle, Building2, FileText, Calendar, Sparkles } from "lucide-react";
 
 const PLATFORMS = [
+  {
+    platform: "openrouter",
+    label: "OpenRouter",
+    description: "LLM API — powers Toora's AI assistant",
+    icon: <Sparkles className="h-5 w-5 text-amber-400" />,
+    fields: [
+      {
+        key: "api_key",
+        label: "API Key",
+        type: "password" as const,
+        hint: "Get a key at openrouter.ai/keys",
+      },
+    ],
+  },
   {
     platform: "gmail",
     label: "Gmail",
