@@ -3,14 +3,13 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
+ARG CACHEBUST=1
 RUN npm ci
 
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Cache bust: force Next.js build to rerun
-ARG CACHEBUST=1
 RUN npm run build
 
 FROM node:20-alpine AS runner
